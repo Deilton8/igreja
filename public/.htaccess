@@ -1,0 +1,13 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Define a pasta public como raiz
+    RewriteBase /
+
+    # Ignora arquivos e diretórios reais
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Redireciona tudo para index.php
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
