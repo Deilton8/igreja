@@ -43,7 +43,7 @@ $router->post('/admin/login', 'Auth\\Controllers\\AuthController@login');
 $router->get('/admin/logout', 'Auth\\Controllers\\AuthController@logout');
 
 // Dashboard
-$router->get('/admin/dashboard', 'Dashboard\\Controllers\\DashboardController@index');
+$router->get('/admin', 'Dashboard\\Controllers\\DashboardController@index');
 
 // Mídias
 $router->get('/admin/midia', 'Media\\Controllers\\MediaController@index');

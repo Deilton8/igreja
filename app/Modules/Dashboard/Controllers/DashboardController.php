@@ -7,9 +7,11 @@ use App\Modules\Dashboard\Models\Dashboard;
 
 class DashboardController extends Controller
 {
+    protected $dashboardModel;
+
     public function __construct()
     {
-        if (session_start() === PHP_SESSION_NONE) {
+        if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
@@ -17,12 +19,31 @@ class DashboardController extends Controller
             header("Location: /admin/login");
             exit;
         }
+
+        $this->dashboardModel = new Dashboard();
     }
 
     public function index()
     {
         $title = "Dashboard";
         $usuario = $_SESSION["usuario"];
-        View::render("Dashboard/Views/index", ["usuario" => $usuario, "title" => $title]);
+
+        $estatisticas = $this->dashboardModel->getEstatisticas();
+        $eventos = $this->dashboardModel->getProximosEventos();
+        $publicacoes = $this->dashboardModel->getUltimasPublicacoes();
+        $sermoes = $this->dashboardModel->getUltimosSermoes();
+        $eventosPorStatus = $this->dashboardModel->getEventosPorStatus();
+        $publicacoesPorCategoria = $this->dashboardModel->getPublicacoesPorCategoria();
+
+        View::render("Dashboard/Views/index", [
+            "usuario" => $usuario,
+            "title" => $title,
+            "estatisticas" => $estatisticas,
+            "eventos" => $eventos,
+            "publicacoes" => $publicacoes,
+            "sermoes" => $sermoes,
+            "eventosPorStatus" => $eventosPorStatus,
+            "publicacoesPorCategoria" => $publicacoesPorCategoria
+        ]);
     }
 }

@@ -33,7 +33,7 @@ class AuthController extends Controller
                     'papel' => $usuario['papel'],
                     'status' => $usuario['status'],
                 ];
-                header("Location: /admin/dashboard");
+                header("Location: /admin");
                 exit;
             } else {
                 $error = "Email ou senha inválidos";
