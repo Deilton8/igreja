@@ -7,7 +7,7 @@ class Config
     {
         $settings = [
             "db_host" => "localhost",
-            "db_name" => "igreja",
+            "db_name" => "imgdorgm_igreja",
             "db_user" => "root",
             "db_pass" => ""
         ];
