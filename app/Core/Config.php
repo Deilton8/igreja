@@ -8,8 +8,8 @@ class Config
         $settings = [
             "db_host" => "localhost",
             "db_name" => "imgdorgm_igreja",
-            "db_user" => "root",
-            "db_pass" => ""
+            "db_user" => "imgdorgm_imgd",
+            "db_pass" => "Ministerio@2007"
         ];
         return $settings[$key] ?? null;
     }
