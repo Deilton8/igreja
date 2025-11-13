@@ -16,7 +16,7 @@
             Painel Admin
         </div>
         <nav class="flex-1 p-4 space-y-2">
-            <a href="/admin/dashboard" class="block px-3 py-2 rounded hover:bg-gray-700">Dashboard</a>
+            <a href="/admin" class="block px-3 py-2 rounded hover:bg-gray-700">Dashboard</a>
             <a href="/admin/midia" class="block px-3 py-2 rounded hover:bg-gray-700">Mídias</a>
             <a href="/admin/eventos" class="block px-3 py-2 rounded hover:bg-gray-700">Eventos</a>
             <a href="/admin/publicacoes" class="block px-3 py-2 rounded hover:bg-gray-700">Publicações</a>
@@ -51,7 +51,7 @@
         <!-- Conteúdo -->
         <section class="p-6 overflow-y-auto flex-1">
             <?php if (!empty($title)): ?>
-                <h1 class="text-2xl font-semibold mb-6"><?= htmlspecialchars($title) ?></h1>
+                <h1 class="text-3xl font-bold mb-6"><?= htmlspecialchars($title) ?></h1>
             <?php endif; ?>
             <?= $content ?? '' ?>
         </section>

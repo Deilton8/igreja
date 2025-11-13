@@ -11,10 +11,7 @@ class UserController extends Controller
 
     public function __construct()
     {
-        if (session_start() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
+        session_start();
         if (empty($_SESSION["usuario"])) {
             header("Location: /admin/login");
             exit();
@@ -25,45 +22,80 @@ class UserController extends Controller
 
     public function index()
     {
-        $usuarios = $this->userModel->all();
-        $title = "Lista de usuários";
-        View::render("User/Views/index", ["usuarios" => $usuarios, "title" => $title]);
+        $search = $_GET['q'] ?? '';
+        $role = $_GET['role'] ?? '';
+        $status = $_GET['status'] ?? '';
+        $page = max(1, intval($_GET['page'] ?? 1));
+        $perPage = 10;
+
+        $pagination = $this->userModel->paginate($page, $perPage, $search, $role, $status);
+
+        $title = "Usuários do Sistema";
+        View::render("User/Views/index", [
+            'usuarios' => $pagination['data'],
+            'pagination' => $pagination,
+            'search' => $search,
+            'role' => $role,
+            'status' => $status,
+            'title' => $title
+        ]);
     }
 
-    public function profile($id)
+    public function toggleStatus($id)
     {
-        $usuario = $this->userModel->find($id);
-        $title = "Perfil de " . $usuario['nome'];
-        View::render("User/Views/profile", ["usuario" => $usuario, "title" => $title]);
+        $this->userModel->toggleStatus($id);
+        $_SESSION['flash'] = "Status do usuário atualizado com sucesso!";
+        header("Location: /admin/usuarios");
+        exit;
     }
 
     public function create()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $this->userModel->create($_POST);
-            header("Location: /admin/usuarios");
-            exit;
+            try {
+                $this->userModel->create($_POST);
+                $_SESSION['flash'] = "Usuário criado com sucesso!";
+                header("Location: /admin/usuarios");
+                exit;
+            } catch (\Exception $e) {
+                $_SESSION['erro'] = $e->getMessage();
+            }
         }
+
         $title = "Novo usuário";
-        View::render("User/Views/create", ["title" => $title]);
+        View::render("User/Views/create", compact('title'));
     }
 
     public function edit($id)
     {
         if ($_SERVER['REQUEST_METHOD'] === "POST") {
-            $this->userModel->update($id, $_POST);
-            header("Location: /admin/usuarios");
-            exit;
+            try {
+                $this->userModel->update($id, $_POST);
+                $_SESSION['flash'] = "Usuário atualizado com sucesso!";
+                header("Location: /admin/usuarios");
+                exit;
+            } catch (\Exception $e) {
+                $_SESSION['erro'] = $e->getMessage();
+            }
         }
+
         $usuario = $this->userModel->find($id);
         $title = "Editar usuário";
-        View::render("User/Views/edit", ["usuario" => $usuario, "title" => $title]);
+        View::render("User/Views/edit", compact('usuario', 'title'));
     }
 
     public function delete($id)
     {
         $this->userModel->delete($id);
+        $_SESSION['flash'] = "Usuário removido com sucesso.";
         header("Location: /admin/usuarios");
         exit;
+    }
+
+    public function profile($id)
+    {
+        $usuario = $this->userModel->find($id);
+        $title = "Perfil do Usuário " . $usuario['nome'];
+        View::render("User/Views/profile", ["usuario" => $usuario, "title" => $title]);
     }
 }
