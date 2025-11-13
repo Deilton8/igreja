@@ -41,6 +41,10 @@ $router->get('/admin/usuario/{id}/deletar', 'User\\Controllers\\UserController@d
 $router->get('/admin/login', 'Auth\\Controllers\\AuthController@login');
 $router->post('/admin/login', 'Auth\\Controllers\\AuthController@login');
 $router->get('/admin/logout', 'Auth\\Controllers\\AuthController@logout');
+$router->get('/admin/esqueci-senha', 'Auth\\Controllers\\AuthController@forgotPassword');
+$router->post('/admin/esqueci-senha', 'Auth\\Controllers\\AuthController@forgotPassword');
+$router->get('/admin/resetar-senha', 'Auth\\Controllers\\AuthController@resetPassword');
+$router->post('/admin/resetar-senha', 'Auth\\Controllers\\AuthController@resetPassword');
 
 // Dashboard
 $router->get('/admin', 'Dashboard\\Controllers\\DashboardController@index');
