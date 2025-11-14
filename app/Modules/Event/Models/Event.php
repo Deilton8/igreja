@@ -21,11 +21,71 @@ class Event extends Model
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+
+    /** Paginação + busca + filtros */
+    public function list($page = 1, $perPage = 10, $filters = [])
+    {
+        $offset = ($page - 1) * $perPage;
+        $where = "WHERE id IS NOT NULL";
+        $params = [];
+
+        // 🔍 Filtros opcionais
+        if (!empty($filters['search'])) {
+            $where .= " AND titulo LIKE :search";
+            $params[':search'] = "%{$filters['search']}%";
+        }
+
+        if (!empty($filters['status'])) {
+            $where .= " AND status = :status";
+            $params[':status'] = $filters['status'];
+        }
+
+        if (!empty($filters['data_inicio'])) {
+            $where .= " AND data_inicio >= :data_inicio";
+            $params[':data_inicio'] = $filters['data_inicio'];
+        }
+
+        if (!empty($filters['data_fim'])) {
+            $where .= " AND data_fim <= :data_fim";
+            $params[':data_fim'] = $filters['data_fim'];
+        }
+
+        if (!empty($filters['local'])) {
+            $where .= " AND local LIKE :local";
+            $params[':local'] = "%{$filters['local']}%";
+        }
+
+        $sql = "
+            SELECT * FROM {$this->table}
+            $where ORDER BY id DESC
+            LIMIT $perPage OFFSET $offset
+        ";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $eventos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Pegar total
+        $countStmt = $this->db->prepare("SELECT COUNT(*) FROM {$this->table} $where");
+        $countStmt->execute($params);
+        $total = $countStmt->fetchColumn();
+
+        return [
+            "data" => $eventos,
+            "total" => $total,
+            "page" => $page,
+            "perPage" => $perPage,
+            "pages" => ceil($total / $perPage)
+        ];
+    }
+
     public function create($data)
     {
+        $data['slug'] = $this->generateSlug($data['titulo']);
+
         $stmt = $this->db->prepare("INSERT INTO {$this->table} 
-            (titulo, descricao, local, data_inicio, data_fim, status) 
-            VALUES (:titulo, :descricao, :local, :data_inicio, :data_fim, :status)");
+            (titulo, descricao, local, data_inicio, data_fim, status, slug) 
+            VALUES (:titulo, :descricao, :local, :data_inicio, :data_fim, :status, :slug)");
 
         $stmt->execute([
             ':titulo' => $data['titulo'],
@@ -34,6 +94,7 @@ class Event extends Model
             ':data_inicio' => $data['data_inicio'],
             ':data_fim' => $data['data_fim'] ?? null,
             ':status' => $data['status'] ?? 'pendente',
+            ':slug' => $data['slug']
         ]);
 
         return $this->db->lastInsertId();
@@ -134,5 +195,21 @@ class Event extends Model
         }
 
         return $evento;
+    }
+
+    /** Slug auto */
+    public function generateSlug($titulo)
+    {
+        $slug = strtolower(trim(preg_replace('/[^a-zA-Z0-9]+/', '-', $titulo), '-'));
+
+        // garantir slug único
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM {$this->table} WHERE slug = ?");
+        $stmt->execute([$slug]);
+
+        if ($stmt->fetchColumn() > 0) {
+            $slug .= "-" . uniqid();
+        }
+
+        return $slug;
     }
 }

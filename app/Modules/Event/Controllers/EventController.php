@@ -28,9 +28,24 @@ class EventController extends Controller
 
     public function index()
     {
-        $eventos = $this->eventModel->all();
-        $title = "Lista de Eventos";
-        View::render("Event/Views/admin/index", ["eventos" => $eventos, "title" => $title]);
+        $page = $_GET['page'] ?? 1;
+
+        $filters = [
+            "search" => $_GET['search'] ?? null,
+            "status" => $_GET['status'] ?? null,
+            "data_inicio" => $_GET['data_inicio'] ?? null,
+            "data_fim" => $_GET['data_fim'] ?? null,
+            "local" => $_GET['local'] ?? null,
+        ];
+
+        $result = $this->eventModel->list($page, 10, $filters);
+
+        View::render("Event/Views/admin/index", [
+            "eventos" => $result['data'],
+            "pagination" => $result,
+            "filters" => $filters,
+            "title" => "Lista de Eventos"
+        ]);
     }
 
     public function show($id)
