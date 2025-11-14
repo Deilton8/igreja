@@ -33,8 +33,8 @@ class Publication extends Model
         $slug = $this->generateSlug($data['titulo']);
 
         $stmt = $this->db->prepare("INSERT INTO {$this->table} 
-            (titulo, slug, conteudo, categoria, status, publicado_em) 
-            VALUES (:titulo, :slug, :conteudo, :categoria, :status, :publicado_em)");
+            (titulo, slug, conteudo, categoria, status, publicado_em, criado_em) 
+            VALUES (:titulo, :slug, :conteudo, :categoria, :status, :publicado_em, NOW())");
 
         $stmt->execute([
             ':titulo' => $data['titulo'],
@@ -42,7 +42,7 @@ class Publication extends Model
             ':conteudo' => $data['conteudo'],
             ':categoria' => $data['categoria'] ?? 'blog',
             ':status' => $data['status'] ?? 'rascunho',
-            ':publicado_em' => $data['publicado_em'] ?? null,
+            ':publicado_em' => !empty($data['publicado_em']) ? $data['publicado_em'] : null,
         ]);
 
         return $this->db->lastInsertId();
@@ -53,7 +53,7 @@ class Publication extends Model
         $slug = $this->generateSlug($data['titulo'], $id);
 
         $stmt = $this->db->prepare("UPDATE {$this->table} 
-            SET titulo=:titulo, slug=:slug, conteudo=:conteudo, categoria=:categoria, status=:status, publicado_em=:publicado_em 
+            SET titulo=:titulo, slug=:slug, conteudo=:conteudo, categoria=:categoria, status=:status, publicado_em=:publicado_em, atualizado_em=NOW()
             WHERE id=:id");
 
         return $stmt->execute([
@@ -62,7 +62,7 @@ class Publication extends Model
             ':conteudo' => $data['conteudo'],
             ':categoria' => $data['categoria'],
             ':status' => $data['status'],
-            ':publicado_em' => $data['publicado_em'] ?? null,
+            ':publicado_em' => !empty($data['publicado_em']) ? $data['publicado_em'] : null,
             ':id' => $id
         ]);
     }
@@ -76,6 +76,9 @@ class Publication extends Model
     // 🔗 Relacionar mídias com publicações
     public function attachMedia($publicacaoId, $mediaIds = [])
     {
+        if (empty($mediaIds))
+            return;
+
         $stmt = $this->db->prepare("INSERT IGNORE INTO midia_publicacoes (midia_id, publicacao_id) VALUES (:midia_id, :publicacao_id)");
 
         foreach ($mediaIds as $midiaId) {
@@ -84,6 +87,12 @@ class Publication extends Model
                 ':publicacao_id' => $publicacaoId
             ]);
         }
+    }
+
+    public function detachAllMedia($publicacaoId)
+    {
+        $stmt = $this->db->prepare("DELETE FROM midia_publicacoes WHERE publicacao_id = ?");
+        return $stmt->execute([$publicacaoId]);
     }
 
     public function getMedia($publicacaoId)
@@ -151,8 +160,22 @@ class Publication extends Model
     private function generateSlug($titulo, $id = null)
     {
         $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $titulo)));
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM {$this->table} WHERE slug = ?" . ($id ? " AND id != ?" : ""));
-        $params = $id ? [$slug, $id] : [$slug];
+        // remove possíveis hifens duplicados e trim
+        $slug = preg_replace('/-+/', '-', trim($slug, '-'));
+
+        if (empty($slug)) {
+            $slug = 'publicacao';
+        }
+
+        $sql = "SELECT COUNT(*) FROM {$this->table} WHERE slug = ?";
+        $params = [$slug];
+
+        if ($id) {
+            $sql .= " AND id != ?";
+            $params[] = $id;
+        }
+
+        $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         $count = $stmt->fetchColumn();
 

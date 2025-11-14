@@ -3,7 +3,7 @@ namespace App\Modules\Publication\Controllers;
 
 use App\Core\Controller;
 use App\Core\View;
-use App\Modules\Publication\Models\Publication;;
+use App\Modules\Publication\Models\Publication;
 use App\Modules\Media\Models\Media;
 
 class PublicationController extends Controller
@@ -36,6 +36,11 @@ class PublicationController extends Controller
     public function show($id)
     {
         $publicacao = $this->publicacaoModel->findWithMedia($id);
+        if (!$publicacao) {
+            $_SESSION['flash'] = ['error' => 'Publicação não encontrada.'];
+            header("Location: /admin/publicacoes");
+            exit;
+        }
         $title = "Detalhes da Publicação";
         View::render("Publication/Views/admin/show", ["publicacao" => $publicacao, "title" => $title]);
     }
@@ -43,14 +48,20 @@ class PublicationController extends Controller
     public function create()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = $this->publicacaoModel->create($_POST);
+            try {
+                $id = $this->publicacaoModel->create($_POST);
 
-            if (!empty($_POST['midias'])) {
-                $this->publicacaoModel->attachMedia($id, $_POST['midias']);
+                // anexar mídias (se houver)
+                if (!empty($_POST['midias'])) {
+                    $this->publicacaoModel->attachMedia($id, $_POST['midias']);
+                }
+
+                $_SESSION['flash'] = ['success' => 'Publicação criada com sucesso.'];
+                header("Location: /admin/publicacoes");
+                exit;
+            } catch (\Exception $e) {
+                $_SESSION['flash'] = ['error' => $e->getMessage()];
             }
-
-            header("Location: /admin/publicacoes");
-            exit;
         }
 
         $midias = $this->mediaModel->all();
@@ -61,17 +72,30 @@ class PublicationController extends Controller
     public function edit($id)
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $this->publicacaoModel->update($id, $_POST);
+            try {
+                $this->publicacaoModel->update($id, $_POST);
 
-            if (!empty($_POST['midias'])) {
-                $this->publicacaoModel->attachMedia($id, $_POST['midias']);
+                // sincronizar mídias: remove todas e reanexa (simples e seguro)
+                $this->publicacaoModel->detachAllMedia($id);
+                if (!empty($_POST['midias'])) {
+                    $this->publicacaoModel->attachMedia($id, $_POST['midias']);
+                }
+
+                $_SESSION['flash'] = ['success' => 'Publicação atualizada com sucesso.'];
+                header("Location: /admin/publicacoes");
+                exit;
+            } catch (\Exception $e) {
+                $_SESSION['flash'] = ['error' => $e->getMessage()];
             }
+        }
 
+        $publicacao = $this->publicacaoModel->find($id);
+        if (!$publicacao) {
+            $_SESSION['flash'] = ['error' => 'Publicação não encontrada.'];
             header("Location: /admin/publicacoes");
             exit;
         }
 
-        $publicacao = $this->publicacaoModel->find($id);
         $midias = $this->mediaModel->all();
         $midiasPublicacao = $this->publicacaoModel->getMedia($id);
         $title = "Editar Publicação";
@@ -87,6 +111,7 @@ class PublicationController extends Controller
     public function delete($id)
     {
         $this->publicacaoModel->delete($id);
+        $_SESSION['flash'] = ['success' => 'Publicação removida com sucesso.'];
         header("Location: /admin/publicacoes");
         exit;
     }
